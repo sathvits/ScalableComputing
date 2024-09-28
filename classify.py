@@ -5,7 +5,7 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 import os
-import cv2
+import matplotlib.image as img 
 import numpy
 import string
 import random
@@ -60,8 +60,8 @@ def main():
 
             for x in os.listdir(args.captcha_dir):
                 # load image and preprocess it
-                raw_data = cv2.imread(os.path.join(args.captcha_dir, x))
-                rgb_data = cv2.cvtColor(raw_data, cv2.COLOR_BGR2RGB)
+                raw_data = img.imread(os.path.join(args.captcha_dir, x))
+                rgb_data = raw_data[..., ::-1]
                 image = numpy.array(rgb_data) / 255.0
                 (c, h, w) = image.shape
                 image = image.reshape([-1, c, h, w])
