@@ -5,7 +5,7 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 import os
-import cv2
+import matplotlib.image as img 
 import numpy
 import string
 import random
@@ -55,6 +55,9 @@ class ImageSequence(keras.utils.Sequence):
         y = [numpy.zeros((self.batch_size, len(self.captcha_symbols)), dtype=numpy.uint8) for i in range(self.captcha_length)]
 
         for i in range(self.batch_size):
+            if not self.files:
+                break
+
             random_image_label = random.choice(list(self.files.keys()))
             random_image_file = self.files[random_image_label]
 
@@ -63,8 +66,8 @@ class ImageSequence(keras.utils.Sequence):
 
             # We have to scale the input pixel values to the range [0, 1] for
             # Keras so we divide by 255 since the image is 8-bit RGB
-            raw_data = cv2.imread(os.path.join(self.directory_name, random_image_file))
-            rgb_data = cv2.cvtColor(raw_data, cv2.COLOR_BGR2RGB)
+            raw_data = img.imread(os.path.join(self.directory_name, random_image_file))
+            rgb_data = raw_data[..., ::-1]
             processed_data = numpy.array(rgb_data) / 255.0
             X[i] = processed_data
 
@@ -156,10 +159,10 @@ def main():
 
         callbacks = [keras.callbacks.EarlyStopping(patience=3),
                      # keras.callbacks.CSVLogger('log.csv'),
-                     keras.callbacks.ModelCheckpoint(args.output_model_name+'.h5', save_best_only=False)]
+                     keras.callbacks.ModelCheckpoint(args.output_model_name, save_best_only=False)]
 
         # Save the model architecture to JSON
-        with open(args.output_model_name+".json", "w") as json_file:
+        with open(args.output_model_name.replace(".h5", "") +".json", "w") as json_file:
             json_file.write(model.to_json())
 
         try:
@@ -167,7 +170,7 @@ def main():
                                 validation_data=validation_data,
                                 epochs=args.epochs,
                                 callbacks=callbacks,
-                                use_multiprocessing=True)
+                                use_multiprocessing=False)
         except KeyboardInterrupt:
             print('KeyboardInterrupt caught, saving current weights as ' + args.output_model_name+'_resume.h5')
             model.save_weights(args.output_model_name+'_resume.h5')
