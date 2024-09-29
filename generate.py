@@ -4,9 +4,8 @@ import os
 import numpy
 import random
 import string
-# import cv2
-import argparse
 from PIL import Image
+import argparse
 import captcha.image
 
 def main():
@@ -65,9 +64,9 @@ def main():
             image_path = os.path.join(args.output_dir, random_str + '_' + str(version) + '.png')
 
         image = numpy.array(captcha_generator.generate_image(random_str))
-        pil_image = Image.fromarray(image)
 
-        pil_image.save(image_path)
+        image = Image.fromarray((image * 255).astype('uint8'))
+        image.save(image_path)
 
 if __name__ == '__main__':
     main()

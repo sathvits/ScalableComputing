@@ -47,18 +47,15 @@ def main():
         print("Entered loop")
 
         # Load TFLite model and allocate tensors
-        interpreter = Interpreter(model_path=args.model_name + '.tflite')
+        interpreter = Interpreter(model_path=args.model_name + '.tflite')      # for Rasberry with tflite_runtime
 
         print("Interpreter created", interpreter)
-        # interpreter = tf.lite.Interpreter(model_path=args.model_name + '.tflite')
+        # interpreter = tf.lite.Interpreter(model_path=args.model_name + '.tflite')      # for Anaconda with Tensorflow Lite
         interpreter.allocate_tensors()
 
         # Print TFLite output details
         output_details = interpreter.get_output_details()
         
-        # print("TFLite Model Output Details:")
-        # for output in output_details:
-        #     print(output['shape'], output['dtype'])
 
         # Get input and output tensors
         input_details = interpreter.get_input_details()
@@ -75,10 +72,6 @@ def main():
 
             # print("Before : ", image)
             image = numpy.expand_dims(image, axis=0)
-            # print("After: ", image)
-
-            # print("Applying a tensor to the image input")
-            # print("Input Details: ", input_details)
 
             # Set the tensor to the input data
             interpreter.set_tensor(input_details[0]['index'], image)
@@ -127,16 +120,10 @@ def main():
             }
 
 
-            # print("Getting results: ")
-            # Get the output prediction
             output_data = [interpreter.get_tensor(output['index']) for output in output_details]
             finalString = ""
             
             for output in output_data:
-                # print("Output: ", numpy.squeeze(output))
-                # print("Highest Value: ", numpy.max(numpy.squeeze(output)))
-                # print("Index Value: ", numpy.argmax(numpy.squeeze(output)))
-                # print("String: ",mapper[numpy.argmax(numpy.squeeze(output))])
                 finalString += mapper[numpy.argmax(numpy.squeeze(output))]
 
             print("finalString: ", finalString)

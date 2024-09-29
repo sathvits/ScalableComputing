@@ -5,7 +5,7 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 import os
-import matplotlib.image as img 
+from PIL import Image
 import numpy
 import string
 import random
@@ -66,8 +66,8 @@ class ImageSequence(keras.utils.Sequence):
 
             # We have to scale the input pixel values to the range [0, 1] for
             # Keras so we divide by 255 since the image is 8-bit RGB
-            raw_data = img.imread(os.path.join(self.directory_name, random_image_file))
-            rgb_data = raw_data[..., ::-1]
+            raw_data = Image.open(os.path.join(self.directory_name, random_image_file))
+            rgb_data = raw_data.convert("RGB")
             processed_data = numpy.array(rgb_data) / 255.0
             X[i] = processed_data
 
@@ -75,7 +75,7 @@ class ImageSequence(keras.utils.Sequence):
             # So the real label should have the "_num" stripped out.
 
             random_image_label = random_image_label.split('_')[0]
-
+        
             for j, ch in enumerate(random_image_label):
                 y[j][i, :] = 0
                 y[j][i, self.captcha_symbols.find(ch)] = 1
@@ -140,8 +140,8 @@ def main():
     # assert len(physical_devices) > 0, "No GPU available!"
     # tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
-    # with tf.device('/device:GPU:0'):
-    with tf.device('/device:CPU:0'):
+    with tf.device('/device:GPU:1'):
+    # with tf.device('/device:CPU:0'):
     # with tf.device('/device:XLA_CPU:0'):
         model = create_model(args.length, len(captcha_symbols), (args.height, args.width, 3))
 
