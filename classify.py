@@ -10,7 +10,8 @@ import numpy
 import string
 import random
 import argparse
-import tensorflow as tf
+from tflite_runtime.interpreter import Interpreter
+# import tensorflow as tf
 
 def main():
     parser = argparse.ArgumentParser()
@@ -43,8 +44,13 @@ def main():
     print("Classifying captchas with symbol set {" + captcha_symbols + "}")
 
     with open(args.output, 'w') as output_file:
+        print("Entered loop")
+
         # Load TFLite model and allocate tensors
-        interpreter = tf.lite.Interpreter(model_path=args.model_name + '.tflite')
+        interpreter = Interpreter(model_path=args.model_name + '.tflite')
+
+        print("Interpreter created", interpreter)
+        # interpreter = tf.lite.Interpreter(model_path=args.model_name + '.tflite')
         interpreter.allocate_tensors()
 
         # Print TFLite output details
