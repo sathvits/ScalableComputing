@@ -5,17 +5,12 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 import os
-import matplotlib.image as img 
+from PIL import Image
 import numpy
 import string
 import random
 import argparse
 import tensorflow as tf
-import tensorflow.keras as keras
-
-def decode(characters, y):
-    y = numpy.argmax(numpy.array(y), axis=2)[:,0]
-    return ''.join([characters[x] for x in y])
 
 def main():
     parser = argparse.ArgumentParser()
@@ -26,7 +21,7 @@ def main():
     args = parser.parse_args()
 
     if args.model_name is None:
-        print("Please specify the CNN model to use")
+        print("Please specify the TFLite model to use")
         exit(1)
 
     if args.captcha_dir is None:
@@ -47,28 +42,102 @@ def main():
 
     print("Classifying captchas with symbol set {" + captcha_symbols + "}")
 
-    with tf.device('/cpu:0'):
-        with open(args.output, 'w') as output_file:
-            json_file = open(args.model_name+'.json', 'r')
-            loaded_model_json = json_file.read()
-            json_file.close()
-            model = keras.models.model_from_json(loaded_model_json)
-            model.load_weights(args.model_name+'.h5')
-            model.compile(loss='categorical_crossentropy',
-                          optimizer=keras.optimizers.Adam(1e-3, amsgrad=True),
-                          metrics=['accuracy'])
+    with open(args.output, 'w') as output_file:
+        # Load TFLite model and allocate tensors
+        interpreter = tf.lite.Interpreter(model_path=args.model_name + '.tflite')
+        interpreter.allocate_tensors()
 
-            for x in os.listdir(args.captcha_dir):
-                # load image and preprocess it
-                raw_data = img.imread(os.path.join(args.captcha_dir, x))
-                rgb_data = raw_data[..., ::-1]
-                image = numpy.array(rgb_data) / 255.0
-                (c, h, w) = image.shape
-                image = image.reshape([-1, c, h, w])
-                prediction = model.predict(image)
-                output_file.write(x + ", " + decode(captcha_symbols, prediction) + "\n")
+        # Print TFLite output details
+        output_details = interpreter.get_output_details()
+        
+        # print("TFLite Model Output Details:")
+        # for output in output_details:
+        #     print(output['shape'], output['dtype'])
 
-                print('Classified ' + x)
+        # Get input and output tensors
+        input_details = interpreter.get_input_details()
+        output_details = interpreter.get_output_details()
+
+        for x in os.listdir(args.captcha_dir):
+            # Load image and preprocess it
+            raw_data = Image.open(os.path.join(args.captcha_dir, x))
+            if raw_data is None:
+                break
+            rgb_data = raw_data.convert("RGB")
+            image = numpy.array(rgb_data) / 255.0
+            image = image.astype(numpy.float32)
+
+            # print("Before : ", image)
+            image = numpy.expand_dims(image, axis=0)
+            # print("After: ", image)
+
+            # print("Applying a tensor to the image input")
+            # print("Input Details: ", input_details)
+
+            # Set the tensor to the input data
+            interpreter.set_tensor(input_details[0]['index'], image)
+
+            # print("Trying to invoke:")
+            # Run inference
+            interpreter.invoke()
+
+            mapper = {
+                0: "0",
+                1: "1",
+                2: "2",
+                3: "3",
+                4: "4",
+                5: "5",
+                6: "6",
+                7: "7",
+                8: "8",
+                9: "9",
+                10: "A",
+                11: "B",
+                12: "C",
+                13: "D",
+                14: "E",
+                15: "F",
+                16: "G",
+                17: "H",
+                18: "I",
+                19: "J",
+                20: "K",
+                21: "L",
+                22: "M",
+                23: "N",
+                24: "O",
+                25: "P",
+                26: "Q",
+                27: "R",
+                28: "S",
+                29: "T",
+                30: "U",
+                31: "V",
+                32: "W",
+                33: "X",
+                34: "Y",
+                35: "Z"
+            }
+
+
+            # print("Getting results: ")
+            # Get the output prediction
+            output_data = [interpreter.get_tensor(output['index']) for output in output_details]
+            finalString = ""
+            
+            for output in output_data:
+                # print("Output: ", numpy.squeeze(output))
+                # print("Highest Value: ", numpy.max(numpy.squeeze(output)))
+                # print("Index Value: ", numpy.argmax(numpy.squeeze(output)))
+                # print("String: ",mapper[numpy.argmax(numpy.squeeze(output))])
+                finalString += mapper[numpy.argmax(numpy.squeeze(output))]
+
+            print("finalString: ", finalString)
+
+            output_file.write(x + ", " + finalString + "\n")
+            
+            print('Classified ' + x)
 
 if __name__ == '__main__':
     main()
